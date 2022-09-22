@@ -116,7 +116,7 @@ class Harbor:
             image_data = self.gen_response(link_params=params)
             total_count = image_data.headers["x-total-count"]
             image_data_json = image_data.json()
-            res_tmp = [j["name"] for i in image_data_json for j in i["tags"]]
+            res_tmp = [j["name"] for i in image_data_json if i.get("tags") for j in i["tags"]]
             res_count += len(image_data_json)
             res.extend(res_tmp)
             current_page = 2
@@ -124,7 +124,7 @@ class Harbor:
                 link_params_new = link_params.format(self.harbor_project_name, repo_name, current_page, page_size)
                 result = self.gen_response(link_params=link_params_new)
                 result_json = result.json()
-                res_tmp = [j["name"] for i in result_json for j in i["tags"]]
+                res_tmp = [j["name"] for i in result_json if i.get("tags") for j in i["tags"]]
                 if res_tmp:
                     res.extend(res_tmp)
                 current_page += 1
@@ -137,7 +137,7 @@ class Harbor:
         """ 通过tag删除镜像 """
         logging.debug("working on tenant Harbor delete_image")
         try:
-            if image_tag not in self.get_image_list(repo_name):
+            if not image_tag.startswith("sha256") and str(image_tag) not in self.get_image_list(repo_name):
                 return True
             link_params = "/api/v2.0/projects/{}/repositories/{}/artifacts/{}"
             params = link_params.format(self.harbor_project_name, repo_name, image_tag)
@@ -147,7 +147,34 @@ class Harbor:
         except Exception as e:
             handle_error(e, inspect.stack()[0][3])
 
+    def get_none_tag_image(self, repo_name):
+        """ 获取镜像标签为none的列表 """
+        logging.debug("working on tenant Harbor get_none_tag_image")
+        try:
+            res = []
+            res_count = 0
+            page_size = 20
+            link_params = "/api/v2.0/projects/{}/repositories/{}/artifacts?page={}&page_size={}"
+            params = link_params.format(self.harbor_project_name, repo_name, 1, page_size)
+            image_data = self.gen_response(link_params=params)
+            total_count = image_data.headers["x-total-count"]
+            image_data_json = image_data.json()
+            res_tmp = [i["digest"] for i in image_data_json if not i.get("tags") and i.get("digest")]
+            res_count += len(image_data_json)
+            res.extend(res_tmp)
+            current_page = 2
+            while res_count < int(total_count):
+                link_params_new = link_params.format(self.harbor_project_name, repo_name, current_page, page_size)
+                result = self.gen_response(link_params=link_params_new)
+                result_json = result.json()
+                res_tmp = [i["digest"] for i in result_json if not i.get("tags") and i.get("digest")]
+                if res_tmp:
+                    res.extend(res_tmp)
+                current_page += 1
+                res_count += len(result_json)
+            return res
+        except Exception as e:
+            handle_error(e, inspect.stack()[0][3])
+
 
 harbor = Harbor()
-if __name__ == '__main__':
-    print(harbor.get_image_list("repo_nane"))
