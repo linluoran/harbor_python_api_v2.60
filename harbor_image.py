@@ -69,7 +69,7 @@ class Harbor:
 
     def get_repo_list(self):
         """ 获取项目下的仓库 """
-        logging.debug("working on tenant Harbor get_repo_list")
+        logging.debug("working on Harbor get_repo_list")
         try:
             res = []
             page_size = 20
@@ -92,7 +92,7 @@ class Harbor:
 
     def delete_repo(self, repo_name):
         """ 删除仓库 """
-        logging.debug("working on tenant Harbor delete_repo")
+        logging.debug("working on Harbor delete_repo")
         try:
             if repo_name not in self.get_repo_list():
                 return True
@@ -106,7 +106,7 @@ class Harbor:
 
     def get_image_list(self, repo_name):
         """ 获取镜像列表(tag) """
-        logging.debug("working on tenant Harbor get_image_list")
+        logging.debug("working on Harbor get_image_list")
         try:
             res = []
             res_count = 0
@@ -135,9 +135,10 @@ class Harbor:
 
     def delete_image(self, repo_name, image_tag):
         """ 通过tag删除镜像 """
-        logging.debug("working on tenant Harbor delete_image")
+        logging.debug("working on Harbor delete_image")
         try:
-            if not image_tag.startswith("sha256") and str(image_tag) not in self.get_image_list(repo_name):
+            image_tag = str(image_tag)
+            if not image_tag.startswith("sha256") and image_tag not in self.get_image_list(repo_name):
                 return True
             link_params = "/api/v2.0/projects/{}/repositories/{}/artifacts/{}"
             params = link_params.format(self.harbor_project_name, repo_name, image_tag)
@@ -149,7 +150,7 @@ class Harbor:
 
     def get_none_tag_image(self, repo_name):
         """ 获取镜像标签为none的列表 """
-        logging.debug("working on tenant Harbor get_none_tag_image")
+        logging.debug("working on Harbor get_none_tag_image")
         try:
             res = []
             res_count = 0
